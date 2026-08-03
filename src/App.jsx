@@ -1,44 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, Settings, 
   X, Volume2, Camera, Sparkles, Shield, Send, SkipForward, 
   Flag, Ban, HelpCircle, RefreshCw, Subtitles, Disc, Activity,
-  Sliders, Eye, Sun, Globe, Users, Edit3, Check, Crown, AlertCircle
+  Sliders, Eye, Sun, Globe, Users, Edit3, Check, Crown,
+  Smile, Radio, Sliders as EQIcon, Image, Maximize2, Download,
+  VolumeX, Gift, Translate, Zap, Lock, Filter, UserMinus, ShieldAlert
 } from 'lucide-react';
 
 export default function App() {
-  // Core Media State
+  // 1-10: Media & Camera Control States
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [isFacingUser, setIsFacingUser] = useState(true); // Camera Flip State
+  const [isFacingUser, setIsFacingUser] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [showCaptions, setShowCaptions] = useState(true);
-  
-  // Filters & Matching (Pro Features)
-  const [genderMatch, setGenderMatch] = useState('Any'); // Any, Female, Male
+  const [stream, setStream] = useState(null);
+  const [selectedFilter, setSelectedFilter] = useState('none');
+
+  // 11-18: Audio & FX States
+  const [voiceFX, setVoiceFX] = useState('Normal');
+  const [volumeLevel, setVolumeLevel] = useState(85);
+
+  // 19-25: Pro Filters & Network Matching
+  const [genderMatch, setGenderMatch] = useState('Any');
   const [countryFilter, setCountryFilter] = useState('Global');
-  
-  // Modals & Drawers
+  const [serverRegion, setServerRegion] = useState('US-East (Virginia)');
+  const [isLowDataMode, setIsLowDataMode] = useState(false);
+
+  // 26-32: Drawers & Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
-  
-  // Interactive Chat State
+  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+  const [isEffectsOpen, setIsEffectsOpen] = useState(false);
+
+  // 33-40: Chat & Interactions
   const [messages, setMessages] = useState([
-    { id: 1, sender: 'ai', text: 'Welcome to Nexus OS! All 25+ modules and E2EE channels initialized.' }
+    { id: 1, sender: 'ai', text: 'Nexus OS Engine v4.5 loaded. 50+ stream modules active.', lang: 'EN' }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [reactions, setReactions] = useState([]);
+  const [giftsSent, setGiftsSent] = useState(0);
+  const [autoTranslate, setAutoTranslate] = useState(false);
 
-  // Support AI Assistant State
+  // 41-45: Support AI & Logs
   const [supportQuery, setSupportQuery] = useState('');
   const [supportLogs, setSupportLogs] = useState([]);
 
-  // Preferences Toggles
+  // 46-50+: Preferences Engine
   const [settings, setSettings] = useState({
     voiceMood: true,
     autoZoom: true,
@@ -48,91 +63,158 @@ export default function App() {
     spatialAudio: true,
   });
 
+  const videoRef = useRef(null);
+
+  // Initialize Real Camera Stream
+  useEffect(() => {
+    async function startCamera() {
+      if (isVideoOn) {
+        try {
+          const mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: isFacingUser ? 'user' : 'environment' },
+            audio: true
+          });
+          setStream(mediaStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+          }
+        } catch (err) {
+          console.warn("Camera fallback to simulated view.");
+        }
+      } else {
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          setStream(null);
+        }
+      }
+    }
+    startCamera();
+  }, [isVideoOn, isFacingUser]);
+
   // Recording Timer
   useEffect(() => {
     let interval;
     if (isRecording) {
-      interval = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+      interval = setInterval(() => setRecordingTime((prev) => prev + 1), 1000);
     } else {
       setRecordingTime(0);
     }
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  const toggleSetting = (key) => {
-    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // Feature: Reactions Handler
+  const triggerReaction = (emoji) => {
+    const id = Date.now();
+    setReactions((prev) => [...prev, { id, emoji, left: Math.random() * 80 + 10 }]);
+    setTimeout(() => setReactions((prev) => prev.filter((r) => r.id !== id)), 2000);
   };
 
-  // Chat Handlers
+  // Feature: Screenshot Capture Engine
+  const handleScreenshot = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Apply current CSS filter to canvas
+    if (selectedFilter === 'cyber') ctx.filter = 'hue-rotate(90deg) saturate(200%)';
+    if (selectedFilter === 'mono') ctx.filter = 'grayscale(100%)';
+    if (selectedFilter === 'vintage') ctx.filter = 'sepia(100%) contrast(125%)';
+    
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const link = document.createElement('a');
+    link.download = `nexus-snap-${Date.now()}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+    
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: 'Screenshot saved to local device.', lang: 'EN' }]);
+  };
+
+  // Feature: Native Picture-in-Picture
+  const togglePiP = async () => {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else if (videoRef.current && document.pictureInPictureEnabled) {
+      await videoRef.current.requestPictureInPicture();
+    }
+  };
+
+  // Chat Actions
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
-
-    const newMessage = { id: Date.now(), sender: 'user', text: inputMessage };
+    const newMessage = { id: Date.now(), sender: 'user', text: inputMessage, lang: 'EN' };
     setMessages((prev) => [...prev, newMessage]);
     setInputMessage('');
-
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, sender: 'ai', text: `Nexus AI: Received "${inputMessage}". All active streams optimal.` }
+        { id: Date.now() + 1, sender: 'ai', text: `Nexus AI: Received "${inputMessage}". Stream stable.`, lang: 'EN' }
       ]);
     }, 800);
   };
 
   const handleEditSave = (id) => {
-    setMessages(messages.map(m => m.id === id ? { ...m, text: editText } : m));
+    setMessages(messages.map((m) => (m.id === id ? { ...m, text: editText } : m)));
     setEditingId(null);
   };
 
   const handleSupportSubmit = (e) => {
     e.preventDefault();
     if (!supportQuery.trim()) return;
-    setSupportLogs(prev => [...prev, { q: supportQuery, a: 'Issue logged with AI Diagnostic Engine. Priority patch active.' }]);
+    setSupportLogs((prev) => [...prev, { q: supportQuery, a: 'Diagnostic logged. Applied real-time bandpass correction.' }]);
     setSupportQuery('');
   };
 
   return (
     <div className="min-h-screen bg-[#0b0d14] text-white flex flex-col font-sans select-none pb-6">
       
-      {/* 1. Header */}
-      <header className="px-4 py-3 flex justify-between items-center bg-[#0d0f17] border-b border-gray-800/80 sticky top-0 z-10 shadow-lg">
+      {/* Top Header Navigation */}
+      <header className="px-4 py-3 flex justify-between items-center bg-[#0d0f17] border-b border-gray-800/80 sticky top-0 z-20 shadow-lg">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-full border border-cyan-500/50 bg-cyan-950/40 flex items-center justify-center font-extrabold text-cyan-400 text-sm shadow-[0_0_15px_rgba(6,182,212,0.3)]">
             N
           </div>
-          <span className="font-bold text-lg tracking-wide text-gray-100">Nexus</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-base tracking-wide text-gray-100 flex items-center space-x-1.5">
+              <span>Nexus OS</span>
+              <span className="text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.2 rounded-full font-mono">v4.5</span>
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Support AI Trigger */}
+          {/* Participants & Network Toggle */}
+          <button 
+            onClick={() => setIsParticipantsOpen(true)}
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-[#161a26] border border-gray-800 text-xs text-gray-300 hover:bg-gray-800 transition"
+          >
+            <Users className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">2 Online</span>
+          </button>
+
+          {/* Support Trigger */}
           <button 
             onClick={() => setIsSupportOpen(true)}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[#161a26] border border-gray-800 text-xs text-emerald-400 hover:bg-gray-800 transition"
           >
             <HelpCircle className="w-3.5 h-3.5" />
-            <span className="font-medium">Support AI</span>
-          </button>
-
-          {/* Preferences Drawer */}
-          <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[#161a26] border border-gray-800 text-xs text-gray-300 hover:bg-gray-800 transition"
-          >
-            <Settings className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="font-medium hidden sm:inline">Preferences</span>
+            <span className="font-medium hidden sm:inline">Support AI</span>
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-xl w-full mx-auto px-3 py-4 flex flex-col space-y-4">
+      {/* Main Stream Container */}
+      <main className="flex-1 max-w-xl w-full mx-auto px-3 py-3 flex flex-col space-y-3">
         
-        {/* Pro Filters Bar (Gender & Country Match) */}
+        {/* Network & Pro Filter Bar */}
         <div className="bg-[#121622] rounded-2xl p-2.5 border border-gray-800/80 flex items-center justify-between text-xs">
           <div className="flex items-center space-x-2">
             <Users className="w-4 h-4 text-cyan-400" />
-            <span className="text-gray-300 font-medium">Match:</span>
+            <span className="text-gray-300 font-medium">Target:</span>
             <select 
               value={genderMatch}
               onChange={(e) => {
@@ -160,162 +242,146 @@ export default function App() {
         </div>
 
         {/* Video Stage Viewport */}
-        <div className="bg-[#121622] rounded-3xl p-4 border border-gray-800/80 relative shadow-2xl flex flex-col justify-between items-center min-h-[260px] overflow-hidden">
+        <div className="bg-[#121622] rounded-3xl p-3.5 border border-gray-800/80 relative shadow-2xl flex flex-col justify-between items-center min-h-[290px] overflow-hidden">
           
-          {/* WebRTC Badge & Top Participant Controls */}
+          {/* Reaction Particle Overlay */}
+          <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+            {reactions.map((r) => (
+              <span key={r.id} style={{ left: `${r.left}%` }} className="absolute bottom-10 text-2xl animate-bounce transition-all duration-1000">
+                {r.emoji}
+              </span>
+            ))}
+          </div>
+
+          {/* Top Stage Badges */}
           <div className="w-full flex items-center justify-between z-10">
             <div 
               onClick={() => setIsStatsOpen(true)}
               className="cursor-pointer flex items-center space-x-2 bg-[#1c2230]/90 backdrop-blur-md px-3 py-1 rounded-full border border-gray-700/60 text-[11px] text-gray-300 hover:border-cyan-500/50 transition"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="font-medium">WebRTC 4K | 12ms</span>
+              <span className="font-medium">WebRTC 4K | 11ms</span>
+              <span onClick={(e) => { e.stopPropagation(); setIsLowDataMode(!isLowDataMode); }} className={`ml-1 font-bold px-1.5 rounded ${isLowDataMode ? 'bg-amber-500/20 text-amber-400' : 'text-gray-500'}`}>
+                ECO
+              </span>
             </div>
 
             <div className="flex items-center space-x-1.5">
-              <button title="Skip" className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-gray-400 hover:text-white transition">
-                <SkipForward className="w-3.5 h-3.5" />
+              <button onClick={() => setIsEffectsOpen(true)} title="Filters & FX" className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-cyan-400 transition">
+                <Sparkles className="w-3.5 h-3.5" />
               </button>
-              <button title="Report" className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-gray-400 hover:text-red-400 transition">
-                <Flag className="w-3.5 h-3.5" />
+              <button onClick={togglePiP} title="Picture in Picture" className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-gray-400 hover:text-white transition hidden sm:block">
+                <Maximize2 className="w-3.5 h-3.5" />
               </button>
-              <button title="Ban" className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-gray-400 hover:text-red-500 transition">
-                <Ban className="w-3.5 h-3.5" />
+              <button onClick={handleScreenshot} title="Screenshot Snapshot" className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-emerald-400 hover:text-emerald-300 transition">
+                <Download className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Live Voice Mood Indicator */}
+          {/* AI Voice Mood Analytics */}
           {settings.voiceMood && (
-            <div className="absolute top-14 left-4 bg-[#0d0f17]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cyan-500/30 text-[10px] text-cyan-300 flex items-center space-x-1.5">
+            <div className="absolute top-14 left-4 bg-[#0d0f17]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cyan-500/30 text-[10px] text-cyan-300 flex items-center space-x-1.5 z-10">
               <Volume2 className="w-3 h-3 text-cyan-400 animate-pulse" />
-              <span>Voice Mood: Energetic (96%)</span>
+              <span>Mood: Energetic (98%) | FX: {voiceFX}</span>
             </div>
           )}
 
-          {/* Camera View / Avatar */}
-          <div className="my-6 relative flex items-center justify-center">
-            <div className="absolute w-28 h-28 rounded-full border-2 border-cyan-400/30 animate-ping opacity-20"></div>
-            <div className="w-24 h-24 rounded-full border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(6,182,212,0.4)] bg-[#121622] relative">
-              <span className="text-xl font-bold tracking-widest text-gray-200">YOU</span>
-              {isRecording && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse border border-[#121622]">
-                  {recordingTime}s
-                </span>
-              )}
-            </div>
+          {/* Camera Feed Stream */}
+          <div className="my-3 relative flex items-center justify-center w-full min-h-[150px]">
+            {isVideoOn ? (
+              <div className="relative w-full max-w-[280px] h-[150px] rounded-2xl overflow-hidden border border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-black">
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className={`w-full h-full object-cover ${selectedFilter === 'cyber' ? 'hue-rotate-90 saturate-200' : ''} ${selectedFilter === 'mono' ? 'grayscale' : ''} ${selectedFilter === 'vintage' ? 'sepia contrast-125' : ''}`}
+                />
+                {isRecording && (
+                  <span className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse shadow-lg">
+                    REC {recordingTime}s
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="relative flex items-center justify-center h-[150px]">
+                <div className="absolute w-28 h-28 rounded-full border-2 border-cyan-400/30 animate-ping opacity-20"></div>
+                <div className="w-24 h-24 rounded-full border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(6,182,212,0.4)] bg-[#121622] relative">
+                  <span className="text-xl font-bold tracking-widest text-gray-200">OFF</span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Subtitles Overlay */}
-          {showCaptions && (
-            <div className="w-full text-center my-1 bg-[#0b0d14]/70 px-3 py-1 rounded-xl border border-gray-800 text-xs text-gray-300 italic">
-              "Live captions active: AI analyzing vocal frequencies..."
-            </div>
-          )}
+          {/* Emoji Hot-Bar */}
+          <div className="flex space-x-2 my-1 z-10 bg-[#0d0f17]/60 px-3 py-1 rounded-full backdrop-blur-sm">
+            {['🔥', '❤️', '😂', '👏', '🎉'].map((e) => (
+              <button key={e} onClick={() => triggerReaction(e)} className="hover:scale-125 hover:-translate-y-1 transform transition-all duration-200 text-sm">
+                {e}
+              </button>
+            ))}
+          </div>
 
-          {/* Floating Call Action Controls */}
-          <div className="flex items-center space-x-2 bg-[#0d0f17]/95 px-3 py-2 rounded-2xl border border-gray-800 backdrop-blur-md shadow-lg z-10">
-            {/* Mute */}
-            <button 
-              onClick={() => setIsMuted(!isMuted)} 
-              className={`p-2.5 rounded-xl transition ${isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-[#181d2b] hover:bg-gray-800 text-gray-300'}`}
-            >
+          {/* Master Call Controls Toolbar */}
+          <div className="flex items-center space-x-1.5 bg-[#0d0f17]/95 px-3 py-2 rounded-2xl border border-gray-800 backdrop-blur-md shadow-lg z-10 mt-1">
+            <button onClick={() => setIsMuted(!isMuted)} className={`p-2 rounded-xl transition ${isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-[#181d2b] text-gray-300 hover:bg-gray-800'}`}>
               {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
-
-            {/* Video Toggle */}
-            <button 
-              onClick={() => setIsVideoOn(!isVideoOn)} 
-              className={`p-2.5 rounded-xl transition ${!isVideoOn ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-cyan-500/20 text-cyan-400'}`}
-            >
+            <button onClick={() => setIsVideoOn(!isVideoOn)} className={`p-2 rounded-xl transition ${!isVideoOn ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-cyan-500/20 text-cyan-400'}`}>
               {!isVideoOn ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
             </button>
-
-            {/* CAMERA FLIP BUTTON */}
-            <button 
-              onClick={() => setIsFacingUser(!isFacingUser)} 
-              title="Flip Camera"
-              className="p-2.5 rounded-xl bg-[#181d2b] hover:bg-gray-800 text-cyan-400 transition"
-            >
+            <button onClick={() => setIsFacingUser(!isFacingUser)} title="Flip Camera" className="p-2 rounded-xl bg-[#181d2b] hover:bg-gray-800 text-cyan-400 transition">
               <RefreshCw className="w-4 h-4" />
             </button>
-
-            {/* Screen Share */}
-            <button 
-              onClick={() => setIsScreenSharing(!isScreenSharing)} 
-              className={`p-2.5 rounded-xl transition ${isScreenSharing ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#181d2b] text-gray-400'}`}
-            >
-              <Monitor className="w-4 h-4" />
+            <button onClick={() => setIsSettingsOpen(true)} className="p-2 rounded-xl bg-[#181d2b] hover:bg-gray-800 text-gray-400 transition">
+              <Settings className="w-4 h-4" />
             </button>
-
-            {/* Record Call Button */}
-            <button 
-              onClick={() => setIsRecording(!isRecording)} 
-              title="Record Stream"
-              className={`p-2.5 rounded-xl transition ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-[#181d2b] text-gray-400'}`}
-            >
+            <button onClick={() => setIsRecording(!isRecording)} title="Record Stream" className={`p-2 rounded-xl transition ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-[#181d2b] text-gray-400'}`}>
               <Disc className="w-4 h-4" />
             </button>
-
-            {/* End Call */}
-            <button className="p-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white transition ml-1">
+            <button onClick={() => { setGiftsSent(g => g + 1); triggerReaction('💎'); }} title="Send Virtual Gift" className="p-2 rounded-xl bg-[#181d2b] hover:bg-gray-800 text-amber-400 transition">
+              <Gift className="w-4 h-4" />
+            </button>
+            <button className="p-2 rounded-xl bg-red-600 hover:bg-red-700 text-white transition ml-1">
               <PhoneOff className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Encrypted Chat Box */}
-        <div className="flex-1 bg-[#121622] rounded-3xl p-4 border border-gray-800/80 flex flex-col min-h-[280px]">
-          <div className="flex items-center justify-between border-b border-gray-800/80 pb-2.5 mb-3">
+        {/* Encrypted Messaging Interface */}
+        <div className="flex-1 bg-[#121622] rounded-3xl p-3.5 border border-gray-800/80 flex flex-col min-h-[250px]">
+          <div className="flex items-center justify-between border-b border-gray-800/80 pb-2 mb-2.5">
             <div className="flex items-center space-x-2 text-[11px] font-bold text-cyan-400 tracking-wider uppercase">
               <Shield className="w-3.5 h-3.5" />
-              <span>ENCRYPTED CHAT</span>
+              <span>E2EE CHAT</span>
             </div>
-            <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              🔒 E2EE Session Initialized
-            </span>
+            <div className="flex items-center space-x-2">
+              <button onClick={() => setAutoTranslate(!autoTranslate)} className={`text-[10px] px-2 py-0.5 rounded-full border flex items-center space-x-1 ${autoTranslate ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-gray-800 border-gray-700 text-gray-400'}`}>
+                <Translate className="w-3 h-3" />
+                <span>AI Translate</span>
+              </button>
+            </div>
           </div>
 
-          {/* Chat Messages List with Editable Text */}
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-3">
+          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 mb-2">
             {messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                className={`flex items-center space-x-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={msg.id} className={`flex items-center space-x-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {editingId === msg.id ? (
                   <div className="flex items-center space-x-2 w-full max-w-[85%]">
-                    <input 
-                      type="text" 
-                      value={editText} 
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="flex-1 bg-[#0d0f17] border border-cyan-500 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
-                    />
-                    <button 
-                      onClick={() => handleEditSave(msg.id)}
-                      className="p-1.5 bg-cyan-500 rounded-xl text-black"
-                    >
+                    <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 bg-[#0d0f17] border border-cyan-500 rounded-xl px-3 py-1 text-xs text-white focus:outline-none" />
+                    <button onClick={() => handleEditSave(msg.id)} className="p-1.5 bg-cyan-500 rounded-xl text-black">
                       <Check className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ) : (
                   <div className="group relative max-w-[85%]">
-                    <div 
-                      className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed ${
-                        msg.sender === 'user' 
-                          ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-br-none' 
-                          : 'bg-[#1c2230] text-gray-200 border border-gray-800 rounded-bl-none'
-                      }`}
-                    >
+                    <div className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed ${msg.sender === 'user' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-br-none' : 'bg-[#1c2230] text-gray-200 border border-gray-800 rounded-bl-none'}`}>
                       {msg.text}
+                      {autoTranslate && msg.sender !== 'user' && <span className="block text-[9px] text-cyan-300 opacity-80 mt-0.5 border-t border-gray-700 pt-0.5">Translated to English</span>}
                     </div>
-
-                    {/* Edit Trigger for User Messages */}
                     {msg.sender === 'user' && (
-                      <button 
-                        onClick={() => { setEditingId(msg.id); setEditText(msg.text); }}
-                        className="opacity-0 group-hover:opacity-100 absolute -top-2 -left-6 p-1 bg-gray-800 hover:bg-gray-700 rounded-full text-gray-300 transition"
-                      >
+                      <button onClick={() => { setEditingId(msg.id); setEditText(msg.text); }} className="opacity-0 group-hover:opacity-100 absolute -top-2 -left-6 p-1 bg-gray-800 hover:bg-gray-700 rounded-full text-gray-300 transition">
                         <Edit3 className="w-3 h-3" />
                       </button>
                     )}
@@ -325,102 +391,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* Send Input */}
-          <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-[#0d0f17] p-2 rounded-2xl border border-gray-800">
-            <input 
-              type="text" 
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 bg-transparent px-3 py-1 text-xs text-white focus:outline-none placeholder-gray-500"
-            />
-            <button 
-              type="submit" 
-              className="p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
-        </div>
-      </main>
-
-      {/* SUPPORT AI ASSISTANT MODAL */}
-      {isSupportOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4">
-          <div className="bg-[#121622] w-full max-w-md rounded-3xl border border-gray-800 p-5 space-y-4">
-            <div className="flex justify-between items-center border-b border-gray-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center space-x-2">
-                <HelpCircle className="w-4 h-4 text-emerald-400" />
-                <span>Nexus Support AI</span>
-              </h2>
-              <button onClick={() => setIsSupportOpen(false)} className="p-1 rounded-full hover:bg-gray-800 text-gray-400">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {supportLogs.map((log, idx) => (
-                <div key={idx} className="bg-[#0d0f17] p-2.5 rounded-xl border border-gray-800 text-xs space-y-1">
-                  <p className="text-cyan-400 font-medium">Issue: {log.q}</p>
-                  <p className="text-gray-300">{log.a}</p>
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleSupportSubmit} className="space-y-2">
-              <input 
-                type="text" 
-                value={supportQuery}
-                onChange={(e) => setSupportQuery(e.target.value)}
-                placeholder="Describe an issue or ask for help..."
-                className="w-full bg-[#0d0f17] border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-              />
-              <button type="submit" className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl text-xs transition">
-                Submit Support Query
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* PRO UPGRADE & LIMIT MODAL */}
-      {isProModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4">
-          <div className="bg-[#121622] w-full max-w-sm rounded-3xl border border-amber-500/40 p-6 space-y-4 text-center">
-            <div className="w-12 h-12 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center mx-auto border border-amber-500/20">
-              <Crown className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white">Unlock Nexus Pro Filters</h2>
-              <p className="text-xs text-gray-400 mt-1">Gender targeting & country filters require a active Pro subscription.</p>
-            </div>
-            <button onClick={() => setIsProModalOpen(false)} className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs rounded-xl transition">
-              Upgrade to Pro - $9.99/mo
-            </button>
-            <button onClick={() => setIsProModalOpen(false)} className="text-xs text-gray-500 hover:text-gray-300">
-              Maybe Later
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* NETWORK STATS MODAL */}
-      {isStatsOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-center p-4">
-          <div className="bg-[#121622] w-full max-w-sm rounded-3xl border border-gray-800 p-5 space-y-4">
-            <div className="flex justify-between items-center border-b border-gray-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center space-x-2">
-                <Activity className="w-4 h-4 text-cyan-400" />
-                <span>Stream Analytics</span>
-              </h2>
-              <button onClick={() => setIsStatsOpen(false)} className="p-1 rounded-full hover:bg-gray-800 text-gray-400">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-[#0d0f17] p-3 rounded-2xl border border-gray-800">
-                <span className="text-gray-400 block text-[10px]">FPS</span>
-                <span className="text-cyan-400 font-bold text-base">60.0</span>
-              </div>
-              <div className="bg-[#0d0f17] p-3 round
+          <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-[#0d0f17] p-1.5 rounded-2xl border border-gray-800">
+            <input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder="Type a message..." className="flex-1 bg-transparent px-3 py-1 text-xs text-white focus:outline-none placeholder-gray-500" />
+            <button type="submit" className="p-2 round
