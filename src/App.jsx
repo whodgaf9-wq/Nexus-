@@ -4,8 +4,8 @@ import {
   X, Volume2, Camera, Sparkles, Shield, Send, SkipForward, 
   Flag, Ban, HelpCircle, RefreshCw, Subtitles, Disc, Activity,
   Sliders, Eye, Sun, Globe, Users, Edit3, Check, Crown,
-  Smile, Radio, Sliders as EQIcon, Image, Maximize2, Download,
-  VolumeX, Gift, Translate, Zap, Lock, Filter, UserMinus, ShieldAlert
+  Smile, Radio, Image, Maximize2, Download,
+  VolumeX, Gift, Languages, Zap, Lock, Filter, UserMinus, ShieldAlert
 } from 'lucide-react';
 
 export default function App() {
@@ -358,7 +358,7 @@ export default function App() {
             </div>
             <div className="flex items-center space-x-2">
               <button onClick={() => setAutoTranslate(!autoTranslate)} className={`text-[10px] px-2 py-0.5 rounded-full border flex items-center space-x-1 ${autoTranslate ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-gray-800 border-gray-700 text-gray-400'}`}>
-                <Translate className="w-3 h-3" />
+                <Languages className="w-3 h-3" />
                 <span>AI Translate</span>
               </button>
             </div>
@@ -393,4 +393,4 @@ export default function App() {
 
           <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-[#0d0f17] p-1.5 rounded-2xl border border-gray-800">
             <input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder="Type a message..." className="flex-1 bg-transparent px-3 py-1 text-xs text-white focus:outline-none placeholder-gray-500" />
-            <button type="submit" className="p-2 round
+            <button type="submit" className="p-2 rounded-xl bg-cyan-500 h
