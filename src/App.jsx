@@ -1,348 +1,280 @@
-import React, { useState } from "react";
-import {
-  Mic, MicOff, Video, VideoOff, ScreenShare, ScreenShareOff,
-  ShieldCheck, HelpCircle, SkipForward, Flag, Ban, PhoneOff,
-  SwitchCamera, Globe, Gamepad2, RefreshCw, Bot, Mic as MicIcon,
-  Sparkles, Lock, Send, X, Check
-} from "lucide-react";
-
-const MATCH_GENDERS = ["Any Gender", "Female", "Male", "Non-Binary"];
-const MATCH_LANGUAGES = ["English", "Spanish", "French", "German", "Japanese", "Mandarin", "Hindi"];
-
-const ICEBREAKERS = [
-  "What's the best meal you've had this month?",
-  "What song is currently stuck in your head?",
-  "If you could teleport anywhere right now, where would you go?",
-  "What is your favorite late-night productivity habit?"
-];
-
-function NexusLogo({ size = 32 }) {
-  return (
-    <div className="flex items-center gap-2.5 cursor-pointer select-none">
-      <div 
-        className="relative flex items-center justify-center rounded-xl font-mono font-extrabold text-white shadow-lg"
-        style={{
-          width: size,
-          height: size,
-          background: "linear-gradient(135deg, #7C8CFF 0%, #40E0C4 100%)",
-          boxShadow: "0 4px 20px rgba(124, 140, 255, 0.35)"
-        }}
-      >
-        <div className="absolute inset-[2px] rounded-[10px] bg-[#0A0D14] flex items-center justify-center">
-          <span className="bg-gradient-to-r from-[#7C8CFF] to-[#40E0C4] bg-clip-text text-transparent text-sm font-black tracking-tighter">
-            N
-          </span>
-        </div>
-      </div>
-      <span className="font-['Space_Grotesk'] font-bold text-lg tracking-tight text-white">
-        Nexus
-      </span>
-    </div>
-  );
-}
-
-function TicTacToeGame() {
-  const [board, setBoard] = useState(Array(9).fill(null));
-  const [xIsNext, setXIsNext] = useState(true);
-
-  const calculateWinner = (squares) => {
-    const lines = [
-      [0,1,2],[3,4,5],[6,7,8],
-      [0,3,6],[1,4,7],[2,5,8],
-      [0,4,8],[2,4,6]
-    ];
-    for (let [a, b, c] of lines) {
-      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-        return squares[a];
-      }
-    }
-    return squares.includes(null) ? null : "Draw";
-  };
-
-  const winner = calculateWinner(board);
-
-  const handleClick = (i) => {
-    if (board[i] || winner) return;
-    const nextBoard = board.slice();
-    nextBoard[i] = xIsNext ? "X" : "O";
-    setBoard(nextBoard);
-    setXIsNext(!xIsNext);
-  };
-
-  const resetGame = () => {
-    setBoard(Array(9).fill(null));
-    setXIsNext(true);
-  };
-
-  return (
-    <div className="p-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md max-w-xs w-full mx-auto text-center shadow-xl">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-mono text-[#40E0C4] uppercase tracking-wider flex items-center gap-1.5 font-bold">
-          <Gamepad2 size={14} /> Nexus Arena
-        </span>
-        <button onClick={resetGame} className="text-xs text-white/60 hover:text-white flex items-center gap-1">
-          <RefreshCw size={12} /> Reset
-        </button>
-      </div>
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        {board.map((cell, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleClick(idx)}
-            className="h-16 rounded-xl border border-white/10 bg-black/40 text-2xl font-bold font-mono text-white flex items-center justify-center"
-          >
-            <span className={cell === "X" ? "text-[#7C8CFF]" : cell === "O" ? "text-[#40E0C4]" : ""}>{cell}</span>
-          </button>
-        ))}
-      </div>
-      <p className="text-xs font-medium text-white/80 font-mono">
-        {winner ? (winner === "Draw" ? "🤝 Game Ended in a Draw!" : `🎉 Winner: ${winner}`) : `Turn: ${xIsNext ? "X" : "O"}`}
-      </p>
-    </div>
-  );
-}
+import React, { useState } from 'react';
+import { 
+  Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, Settings, 
+  X, Volume2, Camera, Sparkles, Shield, Send, SkipForward, 
+  Flag, Ban, HelpCircle, RefreshCw 
+} from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("meet");
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOn, setIsVideoOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [isFacingUser, setIsFacingUser] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Settings Toggles
+  const [settings, setSettings] = useState({
+    voiceMood: true,
+    autoZoom: false,
+    smartFocus: false,
+  });
 
-  const [smartGrammar, setSmartGrammar] = useState(true);
-  const [autoTranslate, setAutoTranslate] = useState(false);
-  const [voiceFx, setVoiceFx] = useState("Off");
-  const [virtualBg, setVirtualBg] = useState("Blur");
-
-  const [targetGender, setTargetGender] = useState("Any Gender");
-  const [targetLang, setTargetLang] = useState("English");
-  const [icebreakerIdx, setIcebreakerIdx] = useState(0);
-
-  const [bugModalOpen, setBugModalOpen] = useState(false);
-  const [bugDescription, setBugDescription] = useState("");
-  const [bugSubmitted, setBugSubmitted] = useState(false);
-
+  // Chat State
   const [messages, setMessages] = useState([
-    { id: 1, author: "System", text: "🔒 E2EE Session Initialized.", time: "10:00", system: true },
-    { id: 2, author: "A.I. Partner", text: "Welcome to Nexus! I am your human-like AI companion. How can I assist you?", time: "10:01", mine: false }
+    { sender: 'ai', text: 'Welcome to Nexus! I am your human-like AI companion. How can I assist you?' }
   ]);
-  const [inputMsg, setInputMsg] = useState("");
+  const [inputMessage, setInputMessage] = useState('');
 
-  const handleSendMessage = () => {
-    if (!inputMsg.trim()) return;
-
-    let processedMsg = inputMsg;
-    if (smartGrammar && processedMsg.toLowerCase() === "he go to store") {
-      processedMsg = "He goes to the store.";
-    }
-
-    const newMsg = {
-      id: Date.now(),
-      author: "You",
-      text: processedMsg,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      mine: true
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
-    setInputMsg("");
-
-    if (autoTranslate) {
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            author: "Nexus Neural Engine",
-            text: `🌐 [Translated to ${targetLang}]:${processedMsg}`,
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            system: true
-          }
-        ]);
-      }, 500);
-    }
+  const toggleSetting = (key) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleReportIssue = (e) => {
+  const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!bugDescription.trim()) return;
-    setBugSubmitted(true);
+    if (!inputMessage.trim()) return;
+
+    const newMessages = [...messages, { sender: 'user', text: inputMessage }];
+    setMessages(newMessages);
+    setInputMessage('');
+
     setTimeout(() => {
-      setBugSubmitted(false);
-      setBugDescription("");
-      setBugModalOpen(false);
-    }, 1800);
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: `Nexus AI received: "${inputMessage}".` }
+      ]);
+    }, 1000);
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0A0D14] text-[#F3F4F8] font-sans flex flex-col">
-      <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-3.5 border-b border-white/10 bg-[#0A0D14]/80 backdrop-blur-xl">
-        <NexusLogo />
-
-        <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10">
-          {[
-            ["meet", "Video Room"],
-            ["partner", "AI Voice Partner"],
-            ["random", "Matchmaking"],
-            ["games", "Interactive Arena"]
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium ${
-                activeTab === id
-                  ? "bg-gradient-to-r from-[#7C8CFF] to-[#40E0C4] text-[#0A0D14] font-semibold"
-                  : "text-white/70"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono">
-            <ShieldCheck size={14} /> E2EE Encrypted
+    <div className="min-h-screen bg-[#0d0f17] text-white flex flex-col font-sans select-none">
+      {/* Top Navigation Header */}
+      <header className="px-4 py-3 flex justify-between items-center bg-[#0d0f17] border-b border-gray-900 sticky top-0 z-10">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-full border border-cyan-500/40 bg-cyan-950/30 flex items-center justify-center font-bold text-cyan-400 text-sm shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+            N
           </div>
+          <span className="font-bold text-lg tracking-wide text-gray-100">Nexus</span>
+        </div>
 
-          <button
-            onClick={() => setBugModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-white/90"
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[#161a26] border border-gray-800 text-xs text-emerald-400 hover:bg-gray-800 transition"
           >
-            <HelpCircle size={14} className="text-[#40E0C4]" /> Support AI
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span className="font-medium">Support AI</span>
           </button>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          {activeTab === "meet" && (
-            <div className="relative rounded-3xl overflow-hidden aspect-video bg-gradient-to-br from-[#171B26] to-[#0F1219] border border-white/10 flex flex-col items-center justify-center">
-              {isVideoOn ? (
-                <div className="relative w-32 h-32 rounded-full bg-gradient-to-tr from-[#7C8CFF] to-[#40E0C4] p-1 animate-pulse">
-                  <div className="w-full h-full rounded-full bg-[#0F1219] flex items-center justify-center font-bold text-2xl text-white">
-                    YOU
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-white/40">
-                  <VideoOff size={48} />
-                  <span className="text-xs font-mono">Camera Muted</span>
-                </div>
-              )}
-
-              <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 font-mono text-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span>WebRTC 4K | 12ms</span>
-              </div>
-
-              <div className="absolute top-4 right-4 flex items-center gap-2">
-                <button className="p-2 rounded-xl bg-black/60 border border-white/10 text-white/80">
-                  <SkipForward size={14} />
-                </button>
-                <button className="p-2 rounded-xl bg-black/60 border border-white/10 text-red-400">
-                  <Flag size={14} />
-                </button>
-                <button className="p-2 rounded-xl bg-black/60 border border-white/10 text-red-400">
-                  <Ban size={14} />
-                </button>
-              </div>
-
-              <div className="absolute bottom-4 flex items-center gap-3 bg-black/70 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/10">
-                <button onClick={() => setIsMicOn(!isMicOn)} className="p-2.5 rounded-xl bg-white/10 text-white">
-                  {isMicOn ? <Mic size={18} /> : <MicOff size={18} />}
-                </button>
-                <button onClick={() => setIsVideoOn(!isVideoOn)} className="p-2.5 rounded-xl bg-white/10 text-white">
-                  {isVideoOn ? <Video size={18} /> : <VideoOff size={18} />}
-                </button>
-                <button onClick={() => setIsScreenSharing(!isScreenSharing)} className="p-2.5 rounded-xl bg-white/10 text-white">
-                  {isScreenSharing ? <ScreenShareOff size={18} /> : <ScreenShare size={18} />}
-                </button>
-                <button onClick={() => setIsFacingUser(!isFacingUser)} className="p-2.5 rounded-xl bg-white/10 text-white">
-                  <SwitchCamera size={18} />
-                </button>
-                <button className="p-2.5 rounded-xl bg-red-500 text-white">
-                  <PhoneOff size={18} />
-                </button>
-              </div>
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-lg w-full mx-auto px-3 py-4 flex flex-col space-y-4">
+        
+        {/* Call Stage Section */}
+        <div className="bg-[#131722] rounded-3xl p-4 border border-gray-800/80 relative shadow-2xl flex flex-col justify-between items-center min-h-[220px]">
+          
+          {/* Status Chip & Quick Actions Bar */}
+          <div className="w-full flex items-center justify-between">
+            <div className="flex items-center space-x-2 bg-[#1c2230] px-3 py-1 rounded-full border border-gray-700/50 text-[11px] text-gray-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="font-medium">WebRTC 4K | 12ms</span>
             </div>
-          )}
 
-          {activeTab === "partner" && (
-            <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-white/0 p-8 flex flex-col items-center text-center justify-center min-h-[400px]">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-r from-[#7C8CFF] to-[#40E0C4] flex items-center justify-center shadow-2xl animate-pulse mb-6">
-                <Bot size={44} className="text-[#0A0D14]" />
-              </div>
-              <h2 className="font-['Space_Grotesk'] text-2xl font-bold mb-2">Nexus Natural AI Companion</h2>
-              <button className="px-6 py-3 rounded-2xl font-semibold text-xs text-[#0A0D14] bg-gradient-to-r from-[#7C8CFF] to-[#40E0C4] flex items-center gap-2">
-                <MicIcon size={16} /> Start Duplex Voice Stream
+            <div className="flex items-center space-x-2">
+              <button className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-gray-400 hover:text-white transition">
+                <SkipForward className="w-3.5 h-3.5" />
               </button>
-            </div>
-          )}
-
-          {activeTab === "random" && (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 flex flex-col gap-5">
-              <h3 className="text-lg font-bold font-['Space_Grotesk'] flex items-center gap-2">
-                <Globe size={18} className="text-[#40E0C4]" /> Matchmaking Preferences
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-white/60 mb-1 block">Gender Preference</label>
-                  <select value={targetGender} onChange={(e) => setTargetGender(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white">
-                    {MATCH_GENDERS.map((g) => <option key={g} value={g} className="bg-[#0A0D14]">{g}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-white/60 mb-1 block">Language Filter</label>
-                  <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white">
-                    {MATCH_LANGUAGES.map((l) => <option key={l} value={l} className="bg-[#0A0D14]">{l}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "games" && (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 flex flex-col items-center">
-              <TicTacToeGame />
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 flex flex-col h-[500px]">
-          <div className="p-4 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Lock size={16} className="text-[#40E0C4]" />
-              <h3 className="font-bold text-xs uppercase font-mono">Encrypted Chat</h3>
+              <button className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-gray-400 hover:text-red-400 transition">
+                <Flag className="w-3.5 h-3.5" />
+              </button>
+              <button className="p-2 rounded-full bg-[#1c2230] hover:bg-gray-800 text-gray-400 hover:text-red-500 transition">
+                <Ban className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
-            {messages.map((m) => (
-              <div key={m.id} className={`flex flex-col ${m.mine ? "items-end" : "items-start"}`}>
-                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs ${m.mine ? "bg-gradient-to-r from-[#7C8CFF] to-[#40E0C4] text-[#0A0D14]" : "bg-white/10 text-white"}`}>
-                  <p>{m.text}</p>
+          {/* Central Voice Glow Avatar */}
+          <div className="my-6 relative flex items-center justify-center">
+            <div className="absolute w-28 h-28 rounded-full border-2 border-cyan-400/30 animate-ping opacity-25"></div>
+            <div className="w-24 h-24 rounded-full border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.4)] bg-[#131722]">
+              <span className="text-xl font-semibold tracking-widest text-gray-200">YOU</span>
+            </div>
+          </div>
+
+          {/* Bottom Floating Control Bar */}
+          <div className="flex items-center space-x-3 bg-[#0d0f17]/90 px-4 py-2 rounded-2xl border border-gray-800 backdrop-blur-md">
+            <button 
+              onClick={() => setIsMuted(!isMuted)} 
+              className={`p-2.5 rounded-xl transition ${isMuted ? 'bg-red-500/20 text-red-400' : 'bg-[#181d2b] hover:bg-gray-800 text-gray-300'}`}
+            >
+              {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+
+            <button 
+              onClick={() => setIsVideoOn(!isVideoOn)} 
+              className={`p-2.5 rounded-xl transition ${!isVideoOn ? 'bg-[#181d2b] text-gray-400' : 'bg-cyan-500/20 text-cyan-400'}`}
+            >
+              {!isVideoOn ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+            </button>
+
+            <button 
+              onClick={() => setIsScreenSharing(!isScreenSharing)} 
+              className={`p-2.5 rounded-xl transition ${isScreenSharing ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#181d2b] text-gray-400'}`}
+            >
+              <Monitor className="w-4 h-4" />
+            </button>
+
+            <button className="p-2.5 rounded-xl bg-[#181d2b] hover:bg-gray-800 text-gray-400 transition">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+
+            <button className="p-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition ml-1">
+              <PhoneOff className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Encrypted Chat Box Container */}
+        <div className="flex-1 bg-[#131722] rounded-3xl p-4 border border-gray-800/80 flex flex-col min-h-[300px]">
+          <div className="flex items-center space-x-2 text-[11px] font-bold text-cyan-400 tracking-wider uppercase mb-3">
+            <Shield className="w-3.5 h-3.5" />
+            <span>ENCRYPTED CHAT</span>
+          </div>
+
+          {/* Session Pill */}
+          <div className="mb-4">
+            <div className="inline-flex items-center space-x-2 bg-[#1c2230] border border-gray-800 px-3 py-1.5 rounded-full text-xs text-gray-300">
+              <span>🔒</span>
+              <span>E2EE Session Initialized.</span>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-4">
+            {messages.map((msg, idx) => (
+              <div 
+                key={idx} 
+                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                    msg.sender === 'user' 
+                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-br-none' 
+                      : 'bg-[#1c2230] text-gray-200 border border-gray-800 rounded-bl-none'
+                  }`}
+                >
+                  {msg.text}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="p-3 border-t border-white/10 flex items-center gap-2">
-            <input
-              type="text"
-              value={inputMsg}
-              onChange={(e) => setInputMsg(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder="Type message..."
-              className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white"
+          {/* Input Box */}
+          <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-[#0d0f17] p-2 rounded-2xl border border-gray-800">
+            <input 
+              type="text" 
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1 bg-transparent px-3 py-1 text-xs text-white focus:outline-none placeholder-gray-500"
             />
-            <button onClick={handleSendMessage} className="p-2 rounded-xl bg-gradient-to-r from-[#7C8CFF] to-[#40E0C4] text-[#0A0D14]">
-              <Send size={16} />
+            <button 
+              type="submit" 
+              className="p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        </div>
+      </main>
+
+      {/* Settings Modal Drawer */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex justify-center items-end sm:items-center p-0 sm:p-4">
+          <div className="bg-[#131722] w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-gray-800 p-6 space-y-5 animate-in slide-in-from-bottom duration-200">
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-gray-800 pb-3">
+              <h2 className="text-base font-bold text-white flex items-center space-x-2">
+                <Settings className="w-4 h-4 text-cyan-400" />
+                <span>Nexus Settings</span>
+              </h2>
+              <button 
+                onClick={() => setIsSettingsOpen(false)} 
+                className="p-1.5 rounded-full hover:bg-gray-800 text-gray-400 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Feature Options List */}
+            <div className="space-y-3">
+              {/* Voice Mood Detection */}
+              <div className="flex items-center justify-between bg-[#0d0f17] p-3.5 rounded-2xl border border-gray-800">
+                <div className="flex space-x-3 items-center">
+                  <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+                    <Volume2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-white">Voice Mood Detection</h3>
+                    <p className="text-[10px] text-gray-400">Ambient tone indicator based on vocal pace and pitch.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => toggleSetting('voiceMood')}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition duration-300 ${settings.voiceMood ? 'bg-cyan-500 justify-end' : 'bg-gray-700 justify-start'}`}
+                >
+                  <span className="w-4 h-4 rounded-full bg-white shadow-md"></span>
+                </button>
+              </div>
+
+              {/* AI Auto Zoom */}
+              <div className="flex items-center justify-between bg-[#0d0f17] p-3.5 rounded-2xl border border-gray-800">
+                <div className="flex space-x-3 items-center">
+                  <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-white">AI Auto Zoom</h3>
+                    <p className="text-[10px] text-gray-400">Gently frames tighter when you speak.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => toggleSetting('autoZoom')}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition duration-300 ${settings.autoZoom ? 'bg-cyan-500 justify-end' : 'bg-gray-700 justify-start'}`}
+                >
+                  <span className="w-4 h-4 rounded-full bg-white shadow-md"></span>
+                </button>
+              </div>
+
+              {/* Smart Focus Mode */}
+              <div className="flex items-center justify-between bg-[#0d0f17] p-3.5 rounded-2xl border border-gray-800">
+                <div className="flex space-x-3 items-center">
+                  <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-white">Smart Focus Mode</h3>
+                    <p className="text-[10px] text-gray-400">Blurs background in large grids.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => toggleSetting('smartFocus')}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition duration-300 ${settings.smartFocus ? 'bg-cyan-500 justify-end' : 'bg-gray-700 justify-start'}`}
+                >
+                  <span className="w-4 h-4 rounded-full bg-white shadow-md"></span>
+                </button>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setIsSettingsOpen(false)}
+              className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-2xl text-xs transition"
+            >
+              Done
             </button>
           </div>
         </div>
-      </main>
+      )}
     </div>
   );
-      }
-                         
+}
+
